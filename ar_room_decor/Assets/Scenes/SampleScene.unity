@@ -473,8 +473,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 920e60a86153c8549a269cad196986eb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlaceObject
-  objectPrefab: {fileID: 7591310436007569359, guid: 65bc8606aade77e4cb106fd20635a94c, type: 3}
   raycastManager: {fileID: 1090477036}
+  loadedModel: {fileID: 7591310436007569359, guid: 65bc8606aade77e4cb106fd20635a94c, type: 3}
 --- !u!114 &1090477036
 MonoBehaviour:
   m_ObjectHideFlags: 0

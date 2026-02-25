@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 public class PlaceObject : MonoBehaviour
 {
     public ARRaycastManager raycastManager;
-    private GameObject loadedModel;
+    public GameObject loadedModel;
     private bool modelLoaded = false;
 
     List<ARRaycastHit> hits = new List<ARRaycastHit>();
@@ -20,6 +20,11 @@ public class PlaceObject : MonoBehaviour
 
     async Task LoadModel()
     {
+        if (loadedModel != null)
+        {
+            modelLoaded = true;
+            return;
+        }
         string glbPath = "file://" + Application.dataPath + "/Models/Study Table.glb";
         var gltfImport = new GltfImport();
         bool success = await gltfImport.Load(glbPath);
@@ -43,12 +48,20 @@ public class PlaceObject : MonoBehaviour
     {
         if (!modelLoaded) return;
 
-        if (Input.touchCount == 0) return;
+        bool mousePressed = Input.GetMouseButtonDown(0);
 
-        Touch touch = Input.GetTouch(0);
-        if (touch.phase != TouchPhase.Began) return;
+        if (Input.touchCount == 0 && !mousePressed) return;
 
-        if (raycastManager.Raycast(touch.position, hits, TrackableType.PlaneWithinPolygon))
+        Touch touch = new Touch();
+        if (!mousePressed)
+        {
+            touch = Input.GetTouch(0);
+            if (touch.phase != TouchPhase.Began) return;
+        }
+
+        Vector3 pos = mousePressed?Input.mousePosition:touch.position;
+
+        if (raycastManager.Raycast(pos, hits, TrackableType.PlaneWithinPolygon))
         {
             Pose hitPose = hits[0].pose;
             Instantiate(loadedModel, hitPose.position, Quaternion.identity);
