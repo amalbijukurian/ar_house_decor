@@ -3,6 +3,7 @@ from services.diy_services import get_diy_by_item
 
 diy_bp = Blueprint("diy", __name__)
 
+
 @diy_bp.route("/diy/<int:item_id>", methods=["GET"])
 def get_diy(item_id):
     try:

@@ -3,10 +3,11 @@ from database.supabase_client import supabase
 
 def get_diy_by_item(item_id):
     """
-    Returns DIY installation guide for selected furniture item.
+    Fetch structured DIY guide for selected furniture item.
     """
+
     response = supabase.table("diy_guide") \
-        .select("*") \
+        .select("steps, tools, safety, time_estimate") \
         .eq("item_id", item_id) \
         .execute()
 
