@@ -2,70 +2,63 @@ using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 using System.Collections.Generic;
-using GLTFast;
-using System.Threading.Tasks;
+using TMPro;
+using UnityEngine.InputSystem.EnhancedTouch;
+using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
 
 public class PlaceObject : MonoBehaviour
 {
     public ARRaycastManager raycastManager;
-    public GameObject loadedModel;
-    private bool modelLoaded = false;
+    public GameObject objectPrefab; // assign prefab in Inspector
+    public TextMeshProUGUI debugText;
 
     List<ARRaycastHit> hits = new List<ARRaycastHit>();
 
-    async void Start()
+    void OnEnable()
     {
-        await LoadModel();
+        EnhancedTouchSupport.Enable();
     }
 
-    async Task LoadModel()
+    void OnDisable()
     {
-        if (loadedModel != null)
-        {
-            modelLoaded = true;
-            return;
-        }
-        string glbPath = "file://" + Application.dataPath + "/Models/Study Table.glb";
-        var gltfImport = new GltfImport();
-        bool success = await gltfImport.Load(glbPath);
-        if (success)
-        {
-            // Create a container for the model
-            GameObject modelContainer = new GameObject("StudyTable");
-            await gltfImport.InstantiateMainSceneAsync(modelContainer.transform);
-            loadedModel = modelContainer;
-            modelLoaded = true;
-            Debug.Log("Model loaded successfully!");
-        }
-        else
-        {
-            Debug.LogError("Failed to load model!");
-        }
-        gltfImport.Dispose();
+        EnhancedTouchSupport.Disable();
     }
 
     void Update()
     {
-        if (!modelLoaded) return;
-
-        bool mousePressed = Input.GetMouseButtonDown(0);
-
-        if (Input.touchCount == 0 && !mousePressed) return;
-
-        Touch touch = new Touch();
-        if (!mousePressed)
+        if (objectPrefab == null || raycastManager == null)
         {
-            touch = Input.GetTouch(0);
-            if (touch.phase != TouchPhase.Began) return;
+            SetDebug("Missing prefab or raycast manager!");
+            return;
         }
 
-        Vector3 pos = mousePressed?Input.mousePosition:touch.position;
+        if (Touch.activeTouches.Count == 0)
+        {
+            SetDebug("Waiting for touch...");
+            return;
+        }
 
-        if (raycastManager.Raycast(pos, hits, TrackableType.PlaneWithinPolygon))
+        var touch = Touch.activeTouches[0];
+        SetDebug("Touch: " + touch.phase);
+
+        if (touch.phase != UnityEngine.InputSystem.TouchPhase.Began) return;
+
+        if (raycastManager.Raycast(touch.screenPosition, hits, TrackableType.PlaneWithinPolygon))
         {
             Pose hitPose = hits[0].pose;
-            Instantiate(loadedModel, hitPose.position, Quaternion.identity);
-            Debug.Log("Object Placed!");
+            GameObject obj = Instantiate(objectPrefab, hitPose.position, Quaternion.identity);
+            obj.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+            SetDebug("✅ Object placed!");
         }
+        else
+        {
+            SetDebug("❌ Tap directly on the plane!");
+        }
+    }
+
+    void SetDebug(string msg)
+    {
+        if (debugText != null)
+            debugText.text = msg;
     }
 }
