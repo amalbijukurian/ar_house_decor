@@ -4,6 +4,7 @@ using UnityEngine.XR.ARSubsystems;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine.InputSystem.EnhancedTouch;
+using UnityEngine.EventSystems;
 using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
 
 public class PlaceObject : MonoBehaviour
@@ -90,13 +91,35 @@ public class PlaceObject : MonoBehaviour
 
         if (touch.phase != UnityEngine.InputSystem.TouchPhase.Began) return;
 
+        // IGNORE touches on UI buttons
+        if (EventSystem.current != null &&
+            EventSystem.current.IsPointerOverGameObject(touch.touchId))
+            return;
+
         // CHECK if tapping existing object
         Ray ray = arCamera.ScreenPointToRay(touch.screenPosition);
         RaycastHit hitInfo;
         if (Physics.Raycast(ray, out hitInfo))
         {
-            SelectObject(hitInfo.collider.gameObject);
+            GameObject tappedObject = hitInfo.collider.gameObject;
+
+            if (tappedObject == selectedObject)
+            {
+                DeselectObject();
+                SetDebug("✅ Deselected!");
+                return;
+            }
+
+            SelectObject(tappedObject);
             SetDebug("✅ Selected! Drag to move, 2 fingers to rotate.");
+            return;
+        }
+
+        // Tapped empty space - deselect
+        if (selectedObject != null)
+        {
+            DeselectObject();
+            SetDebug("✅ Deselected!");
             return;
         }
 
@@ -105,7 +128,9 @@ public class PlaceObject : MonoBehaviour
         {
             Pose hitPose = hits[0].pose;
             GameObject obj = Instantiate(objectPrefab, hitPose.position, Quaternion.identity);
-            obj.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+
+            // Lock object to real world position
+            obj.AddComponent<ARAnchor>();
 
             if (obj.GetComponent<Collider>() == null)
                 obj.AddComponent<BoxCollider>();
@@ -137,7 +162,7 @@ public class PlaceObject : MonoBehaviour
             if (lr != null) lr.enabled = visible;
         }
 
-        planeManager.planesChanged += (args) =>
+        planeManager.trackablesChanged.AddListener((args) =>
         {
             foreach (var plane in args.added)
             {
@@ -146,7 +171,7 @@ public class PlaceObject : MonoBehaviour
                 if (mr != null) mr.enabled = visible;
                 if (lr != null) lr.enabled = visible;
             }
-        };
+        });
     }
 
     void SelectObject(GameObject obj)
@@ -187,6 +212,12 @@ public class PlaceObject : MonoBehaviour
             SetPlanesVisible(true);
             SetDebug("🔍 Scanning for planes...");
         }
+    }
+
+    public void SetFurniture(GameObject newPrefab)
+    {
+        objectPrefab = newPrefab;
+        SetDebug("✅ Selected: " + newPrefab.name);
     }
 
     void SetDebug(string msg)
