@@ -15,7 +15,7 @@ def get_nearby_shop_ids(user_lat, user_lon):
             shop["longitude"]
         )
 
-        if distance <= 5:
+        if distance <= 20:  # 20 km radius
             nearby.append(shop["id"])
 
     return nearby

@@ -11,15 +11,26 @@ def recommend():
         if not data:
             return jsonify({"error": "No data provided"}), 400
 
-        if "budget" not in data or "wall_color" not in data:
-            return jsonify({"error": "Missing budget or wall_color"}), 400
+        # Required fields
+        budget = data.get("budget")
+        color = data.get("color")
 
-        budget = data["budget"]
-        wall_color = data["wall_color"]
-        latitude = data.get("latitude")
-        longitude = data.get("longitude")
+        if budget is None or color is None:
+            return jsonify({
+                "error": "Missing required fields: budget and color"
+            }), 400
 
-        items = recommend_items(budget, wall_color, latitude, longitude)
+        # Optional location fields
+        user_lat = data.get("latitude")
+        user_lon = data.get("longitude")
+
+        # Call service EXACTLY as defined
+        items = recommend_items(
+            budget,
+            color,
+            user_lat,
+            user_lon
+        )
 
         return jsonify({
             "status": "success",
@@ -28,4 +39,7 @@ def recommend():
         }), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
